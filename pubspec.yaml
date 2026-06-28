@@ -1,5 +1,5 @@
 name: weather_app
-description: Flutter prototype for city weather queries with geographic aggregation.
+description: Protótipo Flutter para consultas meteorológicas com agregação geográfica.
 publish_to: 'none'
 version: 0.1.0+1
 
