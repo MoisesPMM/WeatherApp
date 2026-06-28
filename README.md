@@ -1,107 +1,76 @@
 # WeatherApp
 
-WeatherApp é um protótipo Flutter para consulta meteorológica por cidade, com visualização de temperatura e agregações por cidade, UF e regiões geográficas brasileiras.
+WeatherApp é um protótipo Flutter para consultar o clima por cidade e visualizar temperaturas agregadas por cidade, unidade federativa (UF) e região brasileira.
 
-## Visão geral
+## Arquitetura
 
-O app foi estruturado em camadas para manter a UI simples e separar responsabilidades:
+O código-fonte adota nomes em português do Brasil e separa as responsabilidades nas seguintes camadas:
 
-- **Pages/widgets** renderizam a experiência Flutter.
-- **Controllers** expõem estado e ações para a Home.
-- **Services** concentram validações, agregações e preparação de gráficos.
-- **Repositories** fazem consultas HTTP para um backend.
-- **Models** representam entidades geográficas e meteorológicas.
-- **Config** centraliza parâmetros como a URL da API.
+- `paginas` e `componentes`: interface do aplicativo;
+- `controladores`: estado e ações consumidos pela interface;
+- `servicos`: validações, agregações e preparação dos gráficos;
+- `repositorios`: comunicação HTTP com o backend;
+- `modelos`: entidades geográficas e meteorológicas;
+- `configuracao`: parâmetros de execução, como a URL da API.
 
-## Justificativa arquitetural
+Os nomes exigidos pelo Dart, pelo Flutter ou por bibliotecas externas permanecem inalterados. Isso inclui, por exemplo, `main`, `build`, `initState`, `dispose`, `createState` e `notifyListeners`. As chaves JSON e os caminhos HTTP também continuam iguais ao contrato do backend.
 
-Flutter mobile não deve conectar diretamente ao PostgreSQL em produção. Uma conexão direta exporia credenciais no aplicativo, dificultaria autorização por usuário e aumentaria a superfície de ataque. Por isso, este projeto usa `http` para acessar uma API/backend confiável, que por sua vez pode persistir dados em PostgreSQL. O pacote `postgres` está declarado apenas para deixar explícita a possibilidade de uso em ferramentas internas, protótipos locais ou código backend Dart, não como recomendação de conexão direta pelo app mobile.
+## Principais classes
 
-O estado da tela é gerenciado com `provider`, os gráficos usam `fl_chart` e chamadas remotas usam `http`.
+- `AplicativoClima`: raiz da aplicação Flutter;
+- `PaginaAbertura` e `PaginaInicial`: telas do aplicativo;
+- `ControladorClima` e `ControladorGeografia`: estado observável da interface;
+- `ServicoClima` e `ServicoGeografia`: regras de negócio;
+- `RepositorioClima` e `RepositorioGeografia`: acesso à API;
+- `Cidade`, `UnidadeFederativa`, `Microrregiao`, `Mesorregiao` e `Macrorregiao`: entidades geográficas;
+- `DadosMeteorologicos`: leitura de temperatura, umidade e vento;
+- `GraficoClima` e `PontoGrafico`: apresentação dos dados no gráfico.
 
-## Estrutura de pastas
+## Backend e PostgreSQL
 
-- `lib/config/`: configurações da aplicação, incluindo `AppConfig` e variáveis via `--dart-define`.
-- `lib/models/`: entidades de domínio usadas pelo app.
-- `lib/repositories/`: camada de acesso a dados remotos via API HTTP.
-- `lib/services/`: regras de negócio, validações, agregações e transformação para gráficos.
-- `lib/controllers/`: estado e métodos chamados pela UI.
-- `lib/pages/`: telas principais, como Splash e Home.
-- `lib/widgets/`: componentes reutilizáveis, como o gráfico meteorológico.
-- `test/`: testes automatizados disponíveis para o projeto.
+O aplicativo não deve se conectar diretamente ao PostgreSQL em produção. Uma conexão direta exporia credenciais, dificultaria a autorização por usuário e aumentaria a superfície de ataque. O acesso ocorre por uma API confiável, que pode usar PostgreSQL internamente.
 
-## Entidades
+O backend deve oferecer contratos equivalentes a:
 
-- `City`: cidade consultada, associada à UF e microrregião.
-- `StateUf`: unidade federativa, com sigla e macrorregião.
-- `Microregion`: microrregião associada a uma mesorregião.
-- `Mesoregion`: mesorregião associada a uma macrorregião.
-- `Macroregion`: grande região geográfica.
-- `WeatherData`: leitura meteorológica com temperatura, umidade, vento, descrição e data de observação.
+- `GET /cities?q=<cidade>`;
+- `GET /states`;
+- `GET /macroregions`;
+- `GET /weather/cities?name=<cidade>`;
+- `GET /weather/states/<UF>`;
+- `GET /weather/regions/<id>`.
 
-## Repositories
-
-- `GeographyRepository`: busca cidades, UFs e macrorregiões em endpoints HTTP.
-- `WeatherRepository`: busca dados meteorológicos por cidade, UF e região em endpoints HTTP.
-
-Ambos documentam que a persistência PostgreSQL deve ficar atrás de backend/API segura, evitando CRUDs genéricos e conexão direta insegura do app mobile ao banco.
-
-## Services
-
-- `WeatherService`: valida consultas por cidade, consulta dados meteorológicos e prepara pontos para gráficos.
-- `GeographyService`: busca entidades geográficas e agrega resultados por cidade, UF e região.
-
-## Controllers
-
-- `WeatherController`: camada chamada pela Home para `searchByCity`, `getCityChartData`, `getUfChartData` e `getRegionChartData`.
-- `GeographyController`: estado de apoio para buscas e carregamento de cidades, UFs e regiões.
+As chaves JSON em inglês, como `cityId`, `observedAt` e `temperatureCelsius`, são contratos externos e são convertidas para propriedades em português pelos métodos `deJson`.
 
 ## Instalação e execução
 
-1. Instale o Flutter SDK compatível com Dart `>=3.4.0 <4.0.0`.
-2. Instale dependências:
+1. Instale uma versão do Flutter compatível com Dart `>=3.4.0 <4.0.0`.
+2. Instale as dependências:
 
    ```bash
    flutter pub get
    ```
 
-3. Execute o app informando a API:
+3. Execute o aplicativo informando a API:
 
    ```bash
    flutter run --dart-define=API_BASE_URL=https://seu-backend.exemplo/api
    ```
 
-4. Rode análise e testes:
+4. Verifique a análise estática e os testes:
 
    ```bash
    flutter analyze
    flutter test
    ```
 
-## Backend/PostgreSQL esperado
+## Configuração
 
-O app espera uma API HTTP com endpoints equivalentes a:
+- `API_BASE_URL`: URL-base do backend;
+- `BACKEND_USES_POSTGRES`: informa se o backend usa PostgreSQL; o valor padrão é `true`.
 
-- `GET /cities?q=<cidade>`
-- `GET /states`
-- `GET /macroregions`
-- `GET /weather/cities?name=<cidade>`
-- `GET /weather/states/<UF>`
-- `GET /weather/regions/<id>`
+## Limitações
 
-A API pode usar PostgreSQL para persistir entidades geográficas e leituras meteorológicas, mas deve aplicar autenticação, autorização, rate limiting, validação de entrada e sanitização no backend.
-
-## Limitações do protótipo
-
-- Endpoints são contratos esperados; a implementação real do backend não está incluída.
-- As abas de UF e regiões usam chamadas demonstrativas e dependem de dados retornados pela API.
-- Não há CRUD genérico de geografias ou clima, apenas busca e consulta.
-- O pacote `postgres` não deve ser usado diretamente pelo app mobile em produção.
-
-## Próximos passos
-
-- Implementar backend/API com autenticação e persistência PostgreSQL.
-- Adicionar mocks e testes de unidade para services e controllers.
-- Melhorar seleção explícita de UF/região na Home.
-- Configurar CI com `flutter analyze` e `flutter test`.
-- Adicionar tratamento offline/cache para consultas recentes.
+- A implementação do backend não faz parte deste repositório.
+- As abas de UF e região ainda usam consultas demonstrativas.
+- O pacote `postgres` não deve ser usado diretamente pelo aplicativo em produção.
+- Os testes de unidade dos serviços ainda precisam de clientes HTTP simulados.

@@ -2,16 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'home_page.dart';
+import 'homePage.dart';
 
-class SplashPage extends StatefulWidget {
-  const SplashPage({super.key});
+class PaginaAbertura extends StatefulWidget {
+  const PaginaAbertura({super.key});
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  State<PaginaAbertura> createState() => _EstadoPaginaAbertura();
 }
 
-class _SplashPageState extends State<SplashPage> {
+class _EstadoPaginaAbertura extends State<PaginaAbertura> {
   @override
   void initState() {
     super.initState();
@@ -20,7 +20,7 @@ class _SplashPageState extends State<SplashPage> {
         return;
       }
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const HomePage()),
+        MaterialPageRoute<void>(builder: (_) => const PaginaInicial()),
       );
     });
   }
