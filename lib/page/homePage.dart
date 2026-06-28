@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../controllers/climaController.dart';
 import '../models/dadosMetereologicos.dart';
-import '../services/climaService.dart';
 import '../components/graficoClima.dart';
 
 class PaginaInicial extends StatefulWidget {
@@ -13,21 +12,12 @@ class PaginaInicial extends StatefulWidget {
   State<PaginaInicial> createState() => _EstadoPaginaInicial();
 }
 
-class _EstadoPaginaInicial extends State<PaginaInicial>
-    with SingleTickerProviderStateMixin {
+class _EstadoPaginaInicial extends State<PaginaInicial> {
   final _controladorCidade = TextEditingController();
-  late final TabController _controladorAbas;
-
-  @override
-  void initState() {
-    super.initState();
-    _controladorAbas = TabController(length: 3, vsync: this);
-  }
 
   @override
   void dispose() {
     _controladorCidade.dispose();
-    _controladorAbas.dispose();
     super.dispose();
   }
 
@@ -39,14 +29,6 @@ class _EstadoPaginaInicial extends State<PaginaInicial>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Consulta meteorológica'),
-        bottom: TabBar(
-          controller: _controladorAbas,
-          tabs: const [
-            Tab(text: 'Cidade'),
-            Tab(text: 'UF'),
-            Tab(text: 'Regiões'),
-          ],
-        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -87,38 +69,9 @@ class _EstadoPaginaInicial extends State<PaginaInicial>
             if (climaAtual != null) _ResumoClima(dados: climaAtual),
             const SizedBox(height: 16),
             Expanded(
-              child: TabBarView(
-                controller: _controladorAbas,
-                children: [
-                  GraficoClima(
-                    titulo: 'Temperatura por cidade',
-                    pontos: controlador.obterDadosGraficoCidade(),
-                  ),
-                  FutureBuilder<List<PontoGrafico>>(
-                    future: climaAtual == null
-                        ? null
-                        : controlador.obterDadosGraficoUf('UF'),
-                    builder: (contexto, resultado) {
-                      return GraficoClima(
-                        titulo: 'Temperatura média por UF',
-                        pontos: resultado.data ?? const [],
-                      );
-                    },
-                  ),
-                  FutureBuilder<List<PontoGrafico>>(
-                    future: climaAtual == null
-                        ? null
-                        : controlador.obterDadosGraficoRegiao(
-                            climaAtual.idCidade,
-                          ),
-                    builder: (contexto, resultado) {
-                      return GraficoClima(
-                        titulo: 'Temperatura agregada por região',
-                        pontos: resultado.data ?? const [],
-                      );
-                    },
-                  ),
-                ],
+              child: GraficoClima(
+                titulo: 'Temperatura por cidade',
+                pontos: controlador.obterDadosGraficoCidade(),
               ),
             ),
           ],
