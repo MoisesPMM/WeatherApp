@@ -45,19 +45,15 @@ class RepositorioClima {
   }
 
   Future<List<DadosMeteorologicos>> buscarPorUf(String sigla) async {
-    final uri = Uri.parse(
-      '${configuracao.urlBaseApi}/weather/states/$sigla',
+    throw UnsupportedError(
+      'Consulta por UF não está disponível na Open-Meteo. Busque por cidade.',
     );
-    final resposta = await _cliente.get(uri);
-    return _decodificarListaMeteorologica(resposta);
   }
 
   Future<List<DadosMeteorologicos>> buscarPorRegiao(int idRegiao) async {
-    final uri = Uri.parse(
-      '${configuracao.urlBaseApi}/weather/regions/$idRegiao',
+    throw UnsupportedError(
+      'Consulta por região não está disponível na Open-Meteo. Busque por cidade.',
     );
-    final resposta = await _cliente.get(uri);
-    return _decodificarListaMeteorologica(resposta);
   }
 
   List<DadosMeteorologicos> _decodificarListaMeteorologica(
