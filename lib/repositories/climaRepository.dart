@@ -6,6 +6,11 @@ import '../config/appConfig.dart';
 import '../models/dadosMetereologicos.dart';
 
 class RepositorioClima {
+  static const _urlGeocodingOpenMeteo =
+      'https://geocoding-api.open-meteo.com/v1/search';
+  static const _urlForecastOpenMeteo =
+      'https://api.open-meteo.com/v1/forecast';
+
   RepositorioClima({
     required this.configuracao,
     http.Client? cliente,
@@ -15,9 +20,7 @@ class RepositorioClima {
   final http.Client _cliente;
 
   Future<List<DadosMeteorologicos>> buscarPorCidade(String nomeCidade) async {
-    final uriGeocoding = Uri.parse(
-      'https://geocoding-api.open-meteo.com/v1/search',
-    ).replace(
+    final uriGeocoding = Uri.parse(_urlGeocodingOpenMeteo).replace(
       queryParameters: {
         'name': nomeCidade,
         'count': '1',
@@ -26,45 +29,19 @@ class RepositorioClima {
       },
     );
     final respostaGeocoding = await _cliente.get(uriGeocoding);
-    final dadosGeocoding = _decodificarGeocoding(respostaGeocoding);
-    final resultados = dadosGeocoding['results'] as List<dynamic>?;
+    final cidade = _decodificarCidadeOpenMeteo(respostaGeocoding);
 
-    if (resultados == null || resultados.isEmpty) {
-      throw Exception('Cidade não encontrada na Open-Meteo.');
-    }
-
-    final cidade = resultados.first as Map<String, dynamic>;
-    final latitude = cidade['latitude'] as num;
-    final longitude = cidade['longitude'] as num;
-    final nome = cidade['name'] as String;
-
-    final uriPrevisao = Uri.parse(
-      'https://api.open-meteo.com/v1/forecast',
-    ).replace(
+    final uriForecast = Uri.parse(_urlForecastOpenMeteo).replace(
       queryParameters: {
-        'latitude': latitude.toString(),
-        'longitude': longitude.toString(),
-        'current':
-            'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code',
+        'latitude': cidade.latitude.toString(),
+        'longitude': cidade.longitude.toString(),
+        'current': 'temperature_2m,relative_humidity_2m,wind_speed_10m,'
+            'weather_code',
         'timezone': 'auto',
       },
     );
-    final respostaPrevisao = await _cliente.get(uriPrevisao);
-    final dadosPrevisao = _decodificarPrevisaoAtual(respostaPrevisao);
-    final atual = dadosPrevisao['current'] as Map<String, dynamic>;
-    final codigoClima = atual['weather_code'] as num;
-
-    return [
-      DadosMeteorologicos(
-        idCidade: (cidade['id'] as num?)?.toInt() ?? 0,
-        nomeCidade: nome,
-        observadoEm: DateTime.parse(atual['time'] as String),
-        temperaturaCelsius: (atual['temperature_2m'] as num).toDouble(),
-        percentualUmidade: (atual['relative_humidity_2m'] as num).toDouble(),
-        velocidadeVentoKmh: (atual['wind_speed_10m'] as num).toDouble(),
-        descricao: _descricaoCodigoClima(codigoClima.toInt()),
-      ),
-    ];
+    final respostaForecast = await _cliente.get(uriForecast);
+    return [_decodificarClimaOpenMeteo(respostaForecast, cidade)];
   }
 
   Future<List<DadosMeteorologicos>> buscarPorUf(String sigla) async {
@@ -95,73 +72,76 @@ class RepositorioClima {
         .toList(growable: false);
   }
 
-  Map<String, dynamic> _decodificarGeocoding(http.Response resposta) {
+  _CidadeOpenMeteo _decodificarCidadeOpenMeteo(http.Response resposta) {
     if (resposta.statusCode < 200 || resposta.statusCode >= 300) {
       throw Exception(
-        'A API de geocoding retornou ${resposta.statusCode}: ${resposta.body}',
+        'A API retornou ${resposta.statusCode}: ${resposta.body}',
       );
     }
-
-    return jsonDecode(resposta.body) as Map<String, dynamic>;
+    final dadosDecodificados = jsonDecode(resposta.body) as Map<String, dynamic>;
+    final resultados = dadosDecodificados['results'] as List<dynamic>?;
+    if (resultados == null || resultados.isEmpty) {
+      throw Exception('Cidade não encontrada na API Open-Meteo.');
+    }
+    final cidade = resultados.first as Map<String, dynamic>;
+    return _CidadeOpenMeteo(
+      id: cidade['id'] as int,
+      nome: cidade['name'] as String,
+      latitude: (cidade['latitude'] as num).toDouble(),
+      longitude: (cidade['longitude'] as num).toDouble(),
+    );
   }
 
-  Map<String, dynamic> _decodificarPrevisaoAtual(http.Response resposta) {
+  DadosMeteorologicos _decodificarClimaOpenMeteo(
+    http.Response resposta,
+    _CidadeOpenMeteo cidade,
+  ) {
     if (resposta.statusCode < 200 || resposta.statusCode >= 300) {
       throw Exception(
-        'A API de previsão retornou ${resposta.statusCode}: ${resposta.body}',
+        'A API retornou ${resposta.statusCode}: ${resposta.body}',
       );
     }
-
-    return jsonDecode(resposta.body) as Map<String, dynamic>;
+    final dadosDecodificados = jsonDecode(resposta.body) as Map<String, dynamic>;
+    final climaAtual = dadosDecodificados['current'] as Map<String, dynamic>;
+    final codigoClima = climaAtual['weather_code'] as int? ?? -1;
+    return DadosMeteorologicos(
+      idCidade: cidade.id,
+      nomeCidade: cidade.nome,
+      observadoEm: DateTime.parse(climaAtual['time'] as String),
+      temperaturaCelsius: (climaAtual['temperature_2m'] as num).toDouble(),
+      percentualUmidade:
+          (climaAtual['relative_humidity_2m'] as num).toDouble(),
+      velocidadeVentoKmh: (climaAtual['wind_speed_10m'] as num).toDouble(),
+      descricao: _descreverCodigoClima(codigoClima),
+    );
   }
 
-  String _descricaoCodigoClima(int codigo) {
-    switch (codigo) {
-      case 0:
-        return 'Céu limpo';
-      case 1:
-        return 'Principalmente limpo';
-      case 2:
-        return 'Parcialmente nublado';
-      case 3:
-        return 'Nublado';
-      case 45:
-      case 48:
-        return 'Nevoeiro';
-      case 51:
-      case 53:
-      case 55:
-        return 'Garoa';
-      case 56:
-      case 57:
-        return 'Garoa congelante';
-      case 61:
-      case 63:
-      case 65:
-        return 'Chuva';
-      case 66:
-      case 67:
-        return 'Chuva congelante';
-      case 71:
-      case 73:
-      case 75:
-        return 'Neve';
-      case 77:
-        return 'Grãos de neve';
-      case 80:
-      case 81:
-      case 82:
-        return 'Pancadas de chuva';
-      case 85:
-      case 86:
-        return 'Pancadas de neve';
-      case 95:
-        return 'Trovoada';
-      case 96:
-      case 99:
-        return 'Trovoada com granizo';
-      default:
-        return 'Condição climática desconhecida';
-    }
+  String _descreverCodigoClima(int codigo) {
+    return switch (codigo) {
+      0 => 'Céu limpo',
+      1 || 2 || 3 => 'Parcialmente nublado',
+      45 || 48 => 'Nevoeiro',
+      51 || 53 || 55 || 56 || 57 => 'Garoa',
+      61 || 63 || 65 || 66 || 67 => 'Chuva',
+      71 || 73 || 75 || 77 => 'Neve',
+      80 || 81 || 82 => 'Pancadas de chuva',
+      85 || 86 => 'Pancadas de neve',
+      95 || 96 || 99 => 'Tempestade',
+      _ => 'Condição meteorológica não informada',
+    };
   }
+}
+
+class _CidadeOpenMeteo {
+  const _CidadeOpenMeteo({
+    required this.id,
+    required this.nome,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  final int id;
+  final String nome;
+  final double latitude;
+  final double longitude;
 }
