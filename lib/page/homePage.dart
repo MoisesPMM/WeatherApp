@@ -19,7 +19,7 @@ class _EstadoPaginaInicial extends State<PaginaInicial> {
   @override
   void initState() {
     super.initState();
-    _controladorAbas = TabController(length: 2, vsync: this);
+    _controladorAbas = TabController(length: 1, vsync: this);
   }
 
   @override
@@ -40,7 +40,6 @@ class _EstadoPaginaInicial extends State<PaginaInicial> {
           controller: _controladorAbas,
           tabs: const [
             Tab(text: 'Cidade'),
-            Tab(text: 'Regiões'),
           ],
         ),
       ),
@@ -89,19 +88,6 @@ class _EstadoPaginaInicial extends State<PaginaInicial> {
                   GraficoClima(
                     titulo: 'Temperatura por cidade',
                     pontos: controlador.obterDadosGraficoCidade(),
-                  ),
-                  FutureBuilder<List<PontoGrafico>>(
-                    future: climaAtual == null
-                        ? null
-                        : controlador.obterDadosGraficoRegiao(
-                            climaAtual.idCidade,
-                          ),
-                    builder: (contexto, resultado) {
-                      return GraficoClima(
-                        titulo: 'Temperatura agregada por região',
-                        pontos: resultado.data ?? const [],
-                      );
-                    },
                   ),
                 ],
               ),
