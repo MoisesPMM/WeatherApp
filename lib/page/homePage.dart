@@ -14,6 +14,13 @@ class PaginaInicial extends StatefulWidget {
 
 class _EstadoPaginaInicial extends State<PaginaInicial> {
   final _controladorCidade = TextEditingController();
+  late final TabController _controladorAbas;
+
+  @override
+  void initState() {
+    super.initState();
+    _controladorAbas = TabController(length: 2, vsync: this);
+  }
 
   @override
   void dispose() {
@@ -29,6 +36,13 @@ class _EstadoPaginaInicial extends State<PaginaInicial> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Consulta meteorológica'),
+        bottom: TabBar(
+          controller: _controladorAbas,
+          tabs: const [
+            Tab(text: 'Cidade'),
+            Tab(text: 'Regiões'),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -69,9 +83,27 @@ class _EstadoPaginaInicial extends State<PaginaInicial> {
             if (climaAtual != null) _ResumoClima(dados: climaAtual),
             const SizedBox(height: 16),
             Expanded(
-              child: GraficoClima(
-                titulo: 'Temperatura por cidade',
-                pontos: controlador.obterDadosGraficoCidade(),
+              child: TabBarView(
+                controller: _controladorAbas,
+                children: [
+                  GraficoClima(
+                    titulo: 'Temperatura por cidade',
+                    pontos: controlador.obterDadosGraficoCidade(),
+                  ),
+                  FutureBuilder<List<PontoGrafico>>(
+                    future: climaAtual == null
+                        ? null
+                        : controlador.obterDadosGraficoRegiao(
+                            climaAtual.idCidade,
+                          ),
+                    builder: (contexto, resultado) {
+                      return GraficoClima(
+                        titulo: 'Temperatura agregada por região',
+                        pontos: resultado.data ?? const [],
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ],
