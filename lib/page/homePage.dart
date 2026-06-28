@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../controllers/climaController.dart';
 import '../models/dadosMetereologicos.dart';
-import '../services/climaService.dart';
 import '../components/graficoClima.dart';
 
 class PaginaInicial extends StatefulWidget {
@@ -21,7 +20,7 @@ class _EstadoPaginaInicial extends State<PaginaInicial>
   @override
   void initState() {
     super.initState();
-    _controladorAbas = TabController(length: 3, vsync: this);
+    _controladorAbas = TabController(length: 1, vsync: this);
   }
 
   @override
@@ -43,8 +42,6 @@ class _EstadoPaginaInicial extends State<PaginaInicial>
           controller: _controladorAbas,
           tabs: const [
             Tab(text: 'Cidade'),
-            Tab(text: 'UF'),
-            Tab(text: 'Regiões'),
           ],
         ),
       ),
@@ -93,30 +90,6 @@ class _EstadoPaginaInicial extends State<PaginaInicial>
                   GraficoClima(
                     titulo: 'Temperatura por cidade',
                     pontos: controlador.obterDadosGraficoCidade(),
-                  ),
-                  FutureBuilder<List<PontoGrafico>>(
-                    future: climaAtual == null
-                        ? null
-                        : controlador.obterDadosGraficoUf('UF'),
-                    builder: (contexto, resultado) {
-                      return GraficoClima(
-                        titulo: 'Temperatura média por UF',
-                        pontos: resultado.data ?? const [],
-                      );
-                    },
-                  ),
-                  FutureBuilder<List<PontoGrafico>>(
-                    future: climaAtual == null
-                        ? null
-                        : controlador.obterDadosGraficoRegiao(
-                            climaAtual.idCidade,
-                          ),
-                    builder: (contexto, resultado) {
-                      return GraficoClima(
-                        titulo: 'Temperatura agregada por região',
-                        pontos: resultado.data ?? const [],
-                      );
-                    },
                   ),
                 ],
               ),
