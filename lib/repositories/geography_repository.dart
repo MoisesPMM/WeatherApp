@@ -2,53 +2,54 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../config/app_config.dart';
-import '../models/city.dart';
-import '../models/macroregion.dart';
-import '../models/state_uf.dart';
+import '../config/appConfig.dart';
+import '../models/cidade.dart';
+import '../models/macrorregiao.dart';
+import '../models/unidadeFederativa.dart';
 
-/// Repository for read-only geographic queries.
-///
-/// PostgreSQL persistence must be exposed through a trusted backend/API. Mobile
-/// Flutter clients should not connect directly to PostgreSQL in production
-/// because that would expose credentials and bypass server-side authorization.
-class GeographyRepository {
-  GeographyRepository({required this.config, http.Client? client})
-      : _client = client ?? http.Client();
+class RepositorioGeografia {
+  RepositorioGeografia({
+    required this.configuracao,
+    http.Client? cliente,
+  }) : _cliente = cliente ?? http.Client();
 
-  final AppConfig config;
-  final http.Client _client;
+  final ConfiguracaoAplicativo configuracao;
+  final http.Client _cliente;
 
-  Future<List<City>> searchCities(String query) async {
-    final uri = Uri.parse('${config.apiBaseUrl}/cities').replace(
-      queryParameters: {'q': query},
+  Future<List<Cidade>> buscarCidades(String consulta) async {
+    final uri = Uri.parse('${configuracao.urlBaseApi}/cities').replace(
+      queryParameters: {'q': consulta},
     );
-    final response = await _client.get(uri);
-    return _decodeList(response, City.fromJson);
+    final resposta = await _cliente.get(uri);
+    return _decodificarLista(resposta, Cidade.deJson);
   }
 
-  Future<List<StateUf>> fetchStates() async {
-    final response = await _client.get(Uri.parse('${config.apiBaseUrl}/states'));
-    return _decodeList(response, StateUf.fromJson);
-  }
-
-  Future<List<Macroregion>> fetchMacroregions() async {
-    final response = await _client.get(
-      Uri.parse('${config.apiBaseUrl}/macroregions'),
+  Future<List<UnidadeFederativa>> buscarUnidadesFederativas() async {
+    final resposta = await _cliente.get(
+      Uri.parse('${configuracao.urlBaseApi}/states'),
     );
-    return _decodeList(response, Macroregion.fromJson);
+    return _decodificarLista(resposta, UnidadeFederativa.deJson);
   }
 
-  List<T> _decodeList<T>(
-    http.Response response,
-    T Function(Map<String, dynamic>) fromJson,
+  Future<List<Macrorregiao>> buscarMacrorregioes() async {
+    final resposta = await _cliente.get(
+      Uri.parse('${configuracao.urlBaseApi}/macroregions'),
+    );
+    return _decodificarLista(resposta, Macrorregiao.deJson);
+  }
+
+  List<T> _decodificarLista<T>(
+    http.Response resposta,
+    T Function(Map<String, dynamic>) deJson,
   ) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('API returned ${response.statusCode}: ${response.body}');
+    if (resposta.statusCode < 200 || resposta.statusCode >= 300) {
+      throw Exception(
+        'A API retornou ${resposta.statusCode}: ${resposta.body}',
+      );
     }
-    final decoded = jsonDecode(response.body) as List<dynamic>;
-    return decoded
-        .map((item) => fromJson(item as Map<String, dynamic>))
+    final dadosDecodificados = jsonDecode(resposta.body) as List<dynamic>;
+    return dadosDecodificados
+        .map((item) => deJson(item as Map<String, dynamic>))
         .toList(growable: false);
   }
 }

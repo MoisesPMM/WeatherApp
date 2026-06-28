@@ -8,7 +8,7 @@ class AppConfig {
     return const AppConfig(
       apiBaseUrl: String.fromEnvironment(
         'API_BASE_URL',
-        defaultValue: 'https://example.com/api',
+        defaultValue: '',
       ),
       backendUsesPostgres: bool.fromEnvironment(
         'BACKEND_USES_POSTGRES',

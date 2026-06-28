@@ -2,47 +2,56 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../config/app_config.dart';
-import '../models/weather_data.dart';
+import '../config/appConfig.dart';
+import '../models/dadosMetereologicos.dart';
 
-/// Repository for weather queries served by an HTTP backend.
-///
-/// If data is stored in PostgreSQL, keep the database connection in the backend
-/// layer and expose only authenticated HTTPS endpoints to the Flutter app.
-class WeatherRepository {
-  WeatherRepository({required this.config, http.Client? client})
-      : _client = client ?? http.Client();
+class RepositorioClima {
+  RepositorioClima({
+    required this.configuracao,
+    http.Client? cliente,
+  }) : _cliente = cliente ?? http.Client();
 
-  final AppConfig config;
-  final http.Client _client;
+  final ConfiguracaoAplicativo configuracao;
+  final http.Client _cliente;
 
-  Future<List<WeatherData>> fetchByCity(String cityName) async {
-    final uri = Uri.parse('${config.apiBaseUrl}/weather/cities').replace(
-      queryParameters: {'name': cityName},
+  Future<List<DadosMeteorologicos>> buscarPorCidade(String nomeCidade) async {
+    final uri = Uri.parse(
+      '${configuracao.urlBaseApi}/weather/cities',
+    ).replace(queryParameters: {'name': nomeCidade});
+    final resposta = await _cliente.get(uri);
+    return _decodificarListaMeteorologica(resposta);
+  }
+
+  Future<List<DadosMeteorologicos>> buscarPorUf(String sigla) async {
+    final uri = Uri.parse(
+      '${configuracao.urlBaseApi}/weather/states/$sigla',
     );
-    final response = await _client.get(uri);
-    return _decodeWeatherList(response);
+    final resposta = await _cliente.get(uri);
+    return _decodificarListaMeteorologica(resposta);
   }
 
-  Future<List<WeatherData>> fetchByUf(String acronym) async {
-    final uri = Uri.parse('${config.apiBaseUrl}/weather/states/$acronym');
-    final response = await _client.get(uri);
-    return _decodeWeatherList(response);
+  Future<List<DadosMeteorologicos>> buscarPorRegiao(int idRegiao) async {
+    final uri = Uri.parse(
+      '${configuracao.urlBaseApi}/weather/regions/$idRegiao',
+    );
+    final resposta = await _cliente.get(uri);
+    return _decodificarListaMeteorologica(resposta);
   }
 
-  Future<List<WeatherData>> fetchByRegion(int regionId) async {
-    final uri = Uri.parse('${config.apiBaseUrl}/weather/regions/$regionId');
-    final response = await _client.get(uri);
-    return _decodeWeatherList(response);
-  }
-
-  List<WeatherData> _decodeWeatherList(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('API returned ${response.statusCode}: ${response.body}');
+  List<DadosMeteorologicos> _decodificarListaMeteorologica(
+    http.Response resposta,
+  ) {
+    if (resposta.statusCode < 200 || resposta.statusCode >= 300) {
+      throw Exception(
+        'A API retornou ${resposta.statusCode}: ${resposta.body}',
+      );
     }
-    final decoded = jsonDecode(response.body) as List<dynamic>;
-    return decoded
-        .map((item) => WeatherData.fromJson(item as Map<String, dynamic>))
+    final dadosDecodificados = jsonDecode(resposta.body) as List<dynamic>;
+    return dadosDecodificados
+        .map(
+          (item) =>
+              DadosMeteorologicos.deJson(item as Map<String, dynamic>),
+        )
         .toList(growable: false);
   }
 }
