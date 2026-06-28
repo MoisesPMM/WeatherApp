@@ -12,7 +12,8 @@ class PaginaInicial extends StatefulWidget {
   State<PaginaInicial> createState() => _EstadoPaginaInicial();
 }
 
-class _EstadoPaginaInicial extends State<PaginaInicial> {
+class _EstadoPaginaInicial extends State<PaginaInicial>
+    with SingleTickerProviderStateMixin {
   final _controladorCidade = TextEditingController();
   late final TabController _controladorAbas;
 
@@ -24,6 +25,7 @@ class _EstadoPaginaInicial extends State<PaginaInicial> {
 
   @override
   void dispose() {
+    _controladorAbas.dispose();
     _controladorCidade.dispose();
     super.dispose();
   }
