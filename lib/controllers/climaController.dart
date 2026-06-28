@@ -33,15 +33,27 @@ class ControladorClima extends ChangeNotifier {
   }
 
   Future<List<PontoGrafico>> obterDadosGraficoUf(String sigla) async {
-    final dados = await _servicoClima.obterClimaPorUf(sigla);
-    _servicoGeografia.agruparPorUf(dados, sigla);
-    return _servicoClima.prepararGraficoTemperatura(dados);
+    try {
+      final dados = await _servicoClima.obterClimaPorUf(sigla);
+      _servicoGeografia.agruparPorUf(dados, sigla);
+      return _servicoClima.prepararGraficoTemperatura(dados);
+    } on UnsupportedError catch (erro) {
+      mensagemErro = erro.message.toString();
+      notifyListeners();
+      return const [];
+    }
   }
 
   Future<List<PontoGrafico>> obterDadosGraficoRegiao(int idRegiao) async {
-    final dados = await _servicoClima.obterClimaPorRegiao(idRegiao);
-    _servicoGeografia.agruparPorRegiao(dados, 'Região $idRegiao');
-    return _servicoClima.prepararGraficoTemperatura(dados);
+    try {
+      final dados = await _servicoClima.obterClimaPorRegiao(idRegiao);
+      _servicoGeografia.agruparPorRegiao(dados, 'Região $idRegiao');
+      return _servicoClima.prepararGraficoTemperatura(dados);
+    } on UnsupportedError catch (erro) {
+      mensagemErro = erro.message.toString();
+      notifyListeners();
+      return const [];
+    }
   }
 
   Future<void> _executar(Future<void> Function() acao) async {
