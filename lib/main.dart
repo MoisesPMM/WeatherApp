@@ -1,51 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'config/app_config.dart';
-import 'controllers/geography_controller.dart';
-import 'controllers/weather_controller.dart';
-import 'pages/splash_page.dart';
-import 'repositories/geography_repository.dart';
-import 'repositories/weather_repository.dart';
-import 'services/geography_service.dart';
-import 'services/weather_service.dart';
+import 'config/appConfig.dart';
+import 'controllers/climaController.dart';
+import 'controllers/geografiaController.dart';
+import 'page/splashPage.dart';
+import 'repositories/climaRepository.dart';
+import 'repositories/geografiaRepository.dart';
+import 'services/climaService.dart';
+import 'services/geografiaService.dart';
 
 void main() {
-  final config = AppConfig.fromEnvironment();
-  final geographyRepository = GeographyRepository(config: config);
-  final weatherRepository = WeatherRepository(config: config);
+  final configuracao = ConfiguracaoAplicativo.doAmbiente();
+  final repositorioGeografia = RepositorioGeografia(configuracao: configuracao);
+  final repositorioClima = RepositorioClima(configuracao: configuracao);
 
   runApp(
     MultiProvider(
       providers: [
-        Provider.value(value: config),
-        Provider.value(value: geographyRepository),
-        Provider.value(value: weatherRepository),
+        Provider.value(value: configuracao),
+        Provider.value(value: repositorioGeografia),
+        Provider.value(value: repositorioClima),
         Provider(
-          create: (_) => GeographyService(repository: geographyRepository),
+          create: (_) => ServicoGeografia(repositorio: repositorioGeografia),
         ),
         Provider(
-          create: (_) => WeatherService(repository: weatherRepository),
+          create: (_) => ServicoClima(repositorio: repositorioClima),
         ),
         ChangeNotifierProvider(
-          create: (context) => GeographyController(
-            service: context.read<GeographyService>(),
+          create: (contexto) => ControladorGeografia(
+            servico: contexto.read<ServicoGeografia>(),
           ),
         ),
         ChangeNotifierProvider(
-          create: (context) => WeatherController(
-            weatherService: context.read<WeatherService>(),
-            geographyService: context.read<GeographyService>(),
+          create: (contexto) => ControladorClima(
+            servicoClima: contexto.read<ServicoClima>(),
+            servicoGeografia: contexto.read<ServicoGeografia>(),
           ),
         ),
       ],
-      child: const WeatherApp(),
+      child: const AplicativoClima(),
     ),
   );
 }
 
-class WeatherApp extends StatelessWidget {
-  const WeatherApp({super.key});
+class AplicativoClima extends StatelessWidget {
+  const AplicativoClima({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +55,7 @@ class WeatherApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const SplashPage(),
+      home: const PaginaAbertura(),
     );
   }
 }
