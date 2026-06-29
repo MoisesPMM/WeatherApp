@@ -1,4 +1,4 @@
-# WeatherApp
+# WeatherApp - Aplicativo de previsão do tempo.
 
 WeatherApp é um protótipo Flutter para consultar o clima por cidade e visualizar temperaturas agregadas por cidade, unidade federativa (UF) e região brasileira.
 
